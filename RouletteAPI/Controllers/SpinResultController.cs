@@ -82,7 +82,7 @@ namespace RouletteAPI.Controllers
                 {
                     command.Connection = conn;
                     command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@SpinResultId", spinResultId);
+                    command.Parameters.AddWithValue("@SpinIdNumber", spinResultId);
                     using (SqlDataReader dataReader = await command.ExecuteReaderAsync())
                     {
                         table.Load(dataReader);

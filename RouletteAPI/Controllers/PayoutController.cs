@@ -5,7 +5,6 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
 using RouletteAPI.Models;
-using System.Text.RegularExpressions;
 using System.Reflection;
 
 namespace RouletteAPI.Controllers
@@ -30,7 +29,7 @@ namespace RouletteAPI.Controllers
         private List<Bet> GetBetsForSpin(int spinIdNumber)
         {
             var betsToCheckJson = _betController.GetBetsForSpin(spinIdNumber);
-            return MapDataTabletoBets((DataTable)betsToCheckJson.Result.Value);                        
+            return MapDataTabletoBets((DataTable)betsToCheckJson.Result.Value);
         }
 
 
@@ -51,6 +50,7 @@ namespace RouletteAPI.Controllers
         {
             var betsToCheck = GetBetsForSpin(spinIdNumber);
             var spinResult = GetSpinResult(spinIdNumber);
+            var winningBetTypes = GetWinningBetTypes(spinResult.Result);
 
             try
             {
@@ -65,21 +65,28 @@ namespace RouletteAPI.Controllers
                     foreach (var property in properties)
                     {
                         BetType betType;
-                        if (property.PropertyType == typeof(decimal) && (decimal)property.GetValue(this) != 0)
+
+                        if (Enum.TryParse(property.Name, out betType))
                         {
-                            if (Enum.TryParse(property.Name, out betType))
+                            if (winningBetTypes.Contains(betType))
                             {
-                                payoutValue += (decimal)property.GetValue(this) + (decimal)property.GetValue(this) * (int)betType;
+                                object propertyValue = property.GetValue(bet);
+                                decimal betAmount = Convert.ToDecimal(propertyValue);
+                                if (betAmount > 0)
+                                {
+                                    payoutValue += betAmount + (betAmount * GetOdds(betType));
+                                }
                             }
                         }
-                        else
-                        {
-                            return new JsonResult("Could not calculate payout");
-                        }
                     }
-                    Payout payout = new Payout() { BetId = bet.BetId, SpinIdNumber = spinIdNumber, PayoutAmount = payoutValue};
-                    _ = AddPayout(payout);
+
+                    if (payoutValue > 0)
+                    {
+                        Payout payout = new Payout() { BetId = bet.BetId, SpinIdNumber = spinIdNumber, PayoutAmount = payoutValue };
+                        _ = AddPayout(payout);
+                    }
                 }
+                return new JsonResult("All Payouts Calculated");
             }
             catch (Exception ex)
             {
@@ -87,6 +94,78 @@ namespace RouletteAPI.Controllers
             }
         }
 
+        private decimal GetOdds(BetType betType)
+        {
+            if (betType == BetType.BetOnColorRed || betType == BetType.BetOnColorBlack || betType == BetType.BetOnEven || betType == BetType.BetOnOdd || betType == BetType.BetOnHigh || betType == BetType.BetOnLow)
+                return 1;
+
+            if (betType == BetType.BetOnFirstColumn || betType == BetType.BetOnSecondColumn || betType == BetType.BetOnThirdColumn|| betType == BetType.BetOnFirstDozen|| betType == BetType.BetOnSecondDozen|| betType == BetType.BetOnThirdDozen)
+                return 2;
+
+            //default
+            return 35;                
+            
+        }
+
+        private List<BetType> GetWinningBetTypes(int winningNumber)
+        {
+            var winningBetTypes = new List<BetType>();
+            PropertyInfo[] properties = typeof(Bet).GetProperties();
+            BetType winningNumberBetType;
+
+            if (Enum.TryParse(string.Concat("BetOnNumber", winningNumber.ToString()), false, out winningNumberBetType))
+            {
+                winningBetTypes.Add(winningNumberBetType);
+            }
+            else
+            {
+                return winningBetTypes;
+                //log here could not set winning number
+            }
+
+
+            //Side bets
+            if (winningNumber % 2 != 0)
+                winningBetTypes.Add(BetType.BetOnColorBlack);
+
+            if (winningNumber % 2 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnColorRed);
+
+            if (winningNumber % 2 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnEven);
+
+            if (winningNumber % 2 != 0)
+                winningBetTypes.Add(BetType.BetOnOdd);
+
+            if (winningNumber >= 1 && winningNumber <= 18)
+                winningBetTypes.Add(BetType.BetOnLow);
+
+            if (winningNumber >= 19 && winningNumber <= 36)
+                winningBetTypes.Add(BetType.BetOnHigh);
+
+            if (winningNumber >= 1 && winningNumber <= 12)
+                winningBetTypes.Add(BetType.BetOnFirstDozen);
+
+            if (winningNumber >= 13 && winningNumber <= 24)
+                winningBetTypes.Add(BetType.BetOnSecondDozen);
+
+            if (winningNumber >= 25 && winningNumber <= 36)
+                winningBetTypes.Add(BetType.BetOnThirdDozen);
+
+            if (winningNumber % 3 == 1 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnFirstColumn);
+
+            if (winningNumber % 3 == 2 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnSecondColumn);
+
+            if (winningNumber % 3 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnThirdColumn);
+
+
+            return winningBetTypes;
+        }
+
+    
         
 
         [HttpPost]
@@ -180,43 +259,43 @@ namespace RouletteAPI.Controllers
                                                     BetOnFirstColumn = row.Field<decimal>("BetOnFirstColumn"),
                                                     BetOnSecondColumn = row.Field<decimal>("BetOnSecondColumn"),
                                                     BetOnThirdColumn = row.Field<decimal>("BetOnThirdColumn"),
-                                                    BetOn0 = row.Field<decimal>("BetOn0"),
-                                                    BetOn1 = row.Field<decimal>("BetOn1"),
-                                                    BetOn2 = row.Field<decimal>("BetOn2"),
-                                                    BetOn3 = row.Field<decimal>("BetOn3"),
-                                                    BetOn4 = row.Field<decimal>("BetOn4"),
-                                                    BetOn5 = row.Field<decimal>("BetOn5"),
-                                                    BetOn6 = row.Field<decimal>("BetOn6"),
-                                                    BetOn7 = row.Field<decimal>("BetOn7"),
-                                                    BetOn8 = row.Field<decimal>("BetOn8"),
-                                                    BetOn9 = row.Field<decimal>("BetOn9"),
-                                                    BetOn10 = row.Field<decimal>("BetOn10"),
-                                                    BetOn11 = row.Field<decimal>("BetOn11"),
-                                                    BetOn12 = row.Field<decimal>("BetOn12"),
-                                                    BetOn13 = row.Field<decimal>("BetOn13"),
-                                                    BetOn14 = row.Field<decimal>("BetOn14"),
-                                                    BetOn15 = row.Field<decimal>("BetOn15"),
-                                                    BetOn16 = row.Field<decimal>("BetOn16"),
-                                                    BetOn17 = row.Field<decimal>("BetOn17"),
-                                                    BetOn18 = row.Field<decimal>("BetOn18"),
-                                                    BetOn19 = row.Field<decimal>("BetOn19"),
-                                                    BetOn20 = row.Field<decimal>("BetOn20"),
-                                                    BetOn21 = row.Field<decimal>("BetOn21"),
-                                                    BetOn22 = row.Field<decimal>("BetOn22"),
-                                                    BetOn23 = row.Field<decimal>("BetOn23"),
-                                                    BetOn24 = row.Field<decimal>("BetOn24"),
-                                                    BetOn25 = row.Field<decimal>("BetOn25"),
-                                                    BetOn26 = row.Field<decimal>("BetOn26"),
-                                                    BetOn27 = row.Field<decimal>("BetOn27"),
-                                                    BetOn28 = row.Field<decimal>("BetOn28"),
-                                                    BetOn29 = row.Field<decimal>("BetOn29"),
-                                                    BetOn30 = row.Field<decimal>("BetOn30"),
-                                                    BetOn31 = row.Field<decimal>("BetOn31"),
-                                                    BetOn32 = row.Field<decimal>("BetOn32"),
-                                                    BetOn33 = row.Field<decimal>("BetOn33"),
-                                                    BetOn34 = row.Field<decimal>("BetOn34"),
-                                                    BetOn35 = row.Field<decimal>("BetOn35"),
-                                                    BetOn36 = row.Field<decimal>("BetOn36"),
+                                                    BetOnNumber0 = row.Field<decimal>("BetOnNumber0"),
+                                                    BetOnNumber1 = row.Field<decimal>("BetOnNumber1"),
+                                                    BetOnNumber2 = row.Field<decimal>("BetOnNumber2"),
+                                                    BetOnNumber3 = row.Field<decimal>("BetOnNumber3"),
+                                                    BetOnNumber4 = row.Field<decimal>("BetOnNumber4"),
+                                                    BetOnNumber5 = row.Field<decimal>("BetOnNumber5"),
+                                                    BetOnNumber6 = row.Field<decimal>("BetOnNumber6"),
+                                                    BetOnNumber7 = row.Field<decimal>("BetOnNumber7"),
+                                                    BetOnNumber8 = row.Field<decimal>("BetOnNumber8"),
+                                                    BetOnNumber9 = row.Field<decimal>("BetOnNumber9"),
+                                                    BetOnNumber10 = row.Field<decimal>("BetOnNumber10"),
+                                                    BetOnNumber11 = row.Field<decimal>("BetOnNumber11"),
+                                                    BetOnNumber12 = row.Field<decimal>("BetOnNumber12"),
+                                                    BetOnNumber13 = row.Field<decimal>("BetOnNumber13"),
+                                                    BetOnNumber14 = row.Field<decimal>("BetOnNumber14"),
+                                                    BetOnNumber15 = row.Field<decimal>("BetOnNumber15"),
+                                                    BetOnNumber16 = row.Field<decimal>("BetOnNumber16"),
+                                                    BetOnNumber17 = row.Field<decimal>("BetOnNumber17"),
+                                                    BetOnNumber18 = row.Field<decimal>("BetOnNumber18"),
+                                                    BetOnNumber19 = row.Field<decimal>("BetOnNumber19"),
+                                                    BetOnNumber20 = row.Field<decimal>("BetOnNumber20"),
+                                                    BetOnNumber21 = row.Field<decimal>("BetOnNumber21"),
+                                                    BetOnNumber22 = row.Field<decimal>("BetOnNumber22"),
+                                                    BetOnNumber23 = row.Field<decimal>("BetOnNumber23"),
+                                                    BetOnNumber24 = row.Field<decimal>("BetOnNumber24"),
+                                                    BetOnNumber25 = row.Field<decimal>("BetOnNumber25"),
+                                                    BetOnNumber26 = row.Field<decimal>("BetOnNumber26"),
+                                                    BetOnNumber27 = row.Field<decimal>("BetOnNumber27"),
+                                                    BetOnNumber28 = row.Field<decimal>("BetOnNumber28"),
+                                                    BetOnNumber29 = row.Field<decimal>("BetOnNumber29"),
+                                                    BetOnNumber30 = row.Field<decimal>("BetOnNumber30"),
+                                                    BetOnNumber31 = row.Field<decimal>("BetOnNumber31"),
+                                                    BetOnNumber32 = row.Field<decimal>("BetOnNumber32"),
+                                                    BetOnNumber33 = row.Field<decimal>("BetOnNumber33"),
+                                                    BetOnNumber34 = row.Field<decimal>("BetOnNumber34"),
+                                                    BetOnNumber35 = row.Field<decimal>("BetOnNumber35"),
+                                                    BetOnNumber36 = row.Field<decimal>("BetOnNumber36"),
 
                                                 }).ToList();
 
