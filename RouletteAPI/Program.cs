@@ -1,3 +1,7 @@
+using RouletteAPI.Helpers;
+using RouletteAPI.Interfaces;
+using RouletteAPI.Repos;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -22,6 +26,12 @@ builder.Services.AddCors(options =>
 });
 
 
+builder.Services.AddScoped<IBetRepository, BetRepository>();
+builder.Services.AddScoped<ISpinResultRepository, SpinResultRepository>();
+builder.Services.AddScoped<IPayoutRepository, PayoutRepository>();
+builder.Services.AddScoped<IBetHelper, BetHelper>();
+builder.Services.AddScoped<ISpinResultHelper, SpinResultHelper>();
+builder.Services.AddScoped<IPayoutHelper, PayoutHelper>();
 
 var app = builder.Build();
 

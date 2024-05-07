@@ -1,18 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using RouletteAPI.Controllers;
 using RouletteAPI.Models;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http;
-using System.Text;
-using System.IO;
-using System.Text.Json;
-using System.Linq;
+using RouletteAPI.Interfaces;
+using RouletteAPI.Helpers;
 
 namespace RouletteAPI.Tests.Controllers
 {
@@ -20,56 +17,31 @@ namespace RouletteAPI.Tests.Controllers
     public class PayoutControllerTests
     {
         private PayoutController _controller;
-        private Mock<IConfiguration> _configurationMock;
-        private string _testWord;
-        private int _testWordId = 0;
+        private Mock<IPayoutRepository> _payoutRepositoryMock;
+        private Mock<IPayoutHelper> _payoutHelperMock;
 
         [SetUp]
         public void Setup()
         {
-            try
-            {
-                var configValues = new Dictionary<string, string>
-                {
-                    { "ConnectionStrings:RouletteApp", "Data Source=.;Initial Catalog=RouletteApp;Integrated security=true;Encrypt=false;" }
-                };
-                var configuration = new ConfigurationBuilder()
-                    .AddInMemoryCollection(configValues)
-                    .Build();
-
-                _controller = new PayoutController(configuration);
-
-
-                _testWord = Guid.NewGuid().ToString();
-            }
-            catch (Exception ex)
-            {
-                var x = ex.InnerException;
-            }
+            _payoutRepositoryMock = new Mock<IPayoutRepository>();
+            _payoutHelperMock = new Mock<IPayoutHelper>();
+            _controller = new PayoutController(_payoutRepositoryMock.Object, _payoutHelperMock.Object);
         }
-        
+
         [Test]
         public async Task TestCalculatePayout()
         {
             // Arrange
-            
+            int spinIdNumber = 2;
+            var x = _payoutHelperMock.Setup(x => x.CalculatePayoutTotalAsync(spinIdNumber));
 
             // Act
-            var result = await _controller.CalculatePayoutTotal(2);
+            var result = await _controller.CalculatePayoutTotalAsync(spinIdNumber);
 
             // Assert
             Assert.IsInstanceOf<JsonResult>(result);
             var jsonResult = (JsonResult)result;
-            Assert.AreEqual($"{_testWord} added to list of banned words", jsonResult.Value);
+            Assert.AreEqual("All Payouts Calculated", jsonResult.Value);
         }
-
-      
-
-        /*
-        [Test]
-        foreach(
-
-
-        */
     }
 }

@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Data;
-using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
-using RouletteAPI.Models;
-using System.Text.RegularExpressions;
+﻿using Microsoft.AspNetCore.Mvc;
+using RouletteAPI.Interfaces;
 
 namespace RouletteAPI.Controllers
 {
@@ -13,19 +8,19 @@ namespace RouletteAPI.Controllers
     public class SpinResultController : ControllerBase
     {
 
-        private readonly IConfiguration _configuration;
-        private string _sqlDataSource;
-        public SpinResultController(IConfiguration configuration)
+        private readonly ISpinResultRepository _spinResultRepository;
+        private readonly ISpinResultHelper _spinResultHelper;
+        public SpinResultController(ISpinResultRepository spinResultRepository, ISpinResultHelper spinResultHelper)
         {
-            _configuration = configuration;
-            _sqlDataSource = _configuration.GetConnectionString("RouletteApp");
+            _spinResultRepository = spinResultRepository;
+            _spinResultHelper = spinResultHelper;
         }
 
         [Route("SpinTheWheel")]
         [HttpPost]
         public async Task<JsonResult> SpinTheWheel()
         {
-            int result = new Random().Next(0,37);
+            int result = _spinResultHelper.SpinTheWheel();
             return await AddSpinResult(result);
         }
 
@@ -33,20 +28,8 @@ namespace RouletteAPI.Controllers
         [HttpPost]
         public async Task<JsonResult> AddSpinResult(int result)
         {
-            string query = "pr_AddSpinResult";
-            using (SqlConnection conn = new SqlConnection(_sqlDataSource))
-            {
-                await conn.OpenAsync();
-                using (SqlCommand command = new SqlCommand(query))
-                {
-                    command.Connection = conn;
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@Result", result);
-                    await command.ExecuteNonQueryAsync();
-                    conn.Close();
-                }
-            }
-            return new JsonResult("SpinResult Placed");
+            var spinIdNumber = await  _spinResultRepository.AddSpinResultAsync(result);
+            return new JsonResult(spinIdNumber);
         }
 
 
@@ -54,23 +37,7 @@ namespace RouletteAPI.Controllers
         [HttpGet]
         public async Task<JsonResult> GetAllSpinResults()
         {
-            string query = "pr_GetAllSpinResults";
-            DataTable table = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_sqlDataSource))
-            {
-                await conn.OpenAsync();
-                using (SqlCommand command = new SqlCommand(query))
-                {
-                    command.Connection = conn;
-                    command.CommandType = CommandType.StoredProcedure;
-                    using (SqlDataReader dataReader = await command.ExecuteReaderAsync())
-                    {
-                        table.Load(dataReader);
-                    }
-                    conn.Close();
-                }
-            }
-
+            var table = await _spinResultRepository.GetAllSpinResultsAsync();
             return new JsonResult(table);
         }
 
@@ -78,31 +45,9 @@ namespace RouletteAPI.Controllers
         [HttpGet]
         public async Task<JsonResult> GetSpinResult(int spinResultId)
         {
-            string query = "pr_GetSpinResult";
-            DataTable table = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_sqlDataSource))
-            {
-                await conn.OpenAsync();
-                using (SqlCommand command = new SqlCommand(query))
-                {
-                    command.Connection = conn;
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("@SpinIdNumber", spinResultId);
-                    using (SqlDataReader dataReader = await command.ExecuteReaderAsync())
-                    {
-                        table.Load(dataReader);
-                    }
-                    conn.Close();
-                }
-            }
-
+            var table = await _spinResultRepository.GetSpinResultAsync(spinResultId);
             return new JsonResult(table);
         }
-
-
-
-
-
 
     }
 }
