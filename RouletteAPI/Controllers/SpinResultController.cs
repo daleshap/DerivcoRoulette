@@ -20,12 +20,16 @@ namespace RouletteAPI.Controllers
             _configuration = configuration;
             _sqlDataSource = _configuration.GetConnectionString("RouletteApp");
         }
+
+        [Route("SpinTheWheel")]
+        [HttpPost]
         public async Task<JsonResult> SpinTheWheel()
         {
             int result = new Random().Next(0,37);
             return await AddSpinResult(result);
         }
 
+        [Route("AddSpinResult")]
         [HttpPost]
         public async Task<JsonResult> AddSpinResult(int result)
         {
@@ -46,6 +50,7 @@ namespace RouletteAPI.Controllers
         }
 
 
+        [Route("GetAllSpinResults")]
         [HttpGet]
         public async Task<JsonResult> GetAllSpinResults()
         {

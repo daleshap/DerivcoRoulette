@@ -26,26 +26,9 @@ namespace RouletteAPI.Controllers
             _spinResultController = new SpinResultController(_configuration);
         }
 
-        private List<Bet> GetBetsForSpin(int spinIdNumber)
-        {
-            var betsToCheckJson = _betController.GetBetsForSpin(spinIdNumber);
-            return MapDataTabletoBets((DataTable)betsToCheckJson.Result.Value);
-        }
 
-
-        private SpinResult GetSpinResult(int spinIdNumber)
-        {
-            var spinResultJson = _spinResultController.GetSpinResult(spinIdNumber);
-            var dt = (DataTable)spinResultJson.Result.Value;
-            var spinResult = dt.AsEnumerable().Select(row =>
-                                                new SpinResult
-                                                {
-                                                    SpinIdNumber = row.Field<int>("SpinIdNumber"),
-                                                    Result = row.Field<int>("Result"),
-                                                }).ToList();
-            return spinResult.FirstOrDefault();
-        }
-
+        [Route("CalculateAllPayouts")]
+        [HttpPost]
         public async Task<JsonResult> CalculatePayoutTotal(int spinIdNumber)
         {
             var betsToCheck = GetBetsForSpin(spinIdNumber);
@@ -94,80 +77,8 @@ namespace RouletteAPI.Controllers
             }
         }
 
-        private decimal GetOdds(BetType betType)
-        {
-            if (betType == BetType.BetOnColorRed || betType == BetType.BetOnColorBlack || betType == BetType.BetOnEven || betType == BetType.BetOnOdd || betType == BetType.BetOnHigh || betType == BetType.BetOnLow)
-                return 1;
 
-            if (betType == BetType.BetOnFirstColumn || betType == BetType.BetOnSecondColumn || betType == BetType.BetOnThirdColumn|| betType == BetType.BetOnFirstDozen|| betType == BetType.BetOnSecondDozen|| betType == BetType.BetOnThirdDozen)
-                return 2;
-
-            //default
-            return 35;                
-            
-        }
-
-        private List<BetType> GetWinningBetTypes(int winningNumber)
-        {
-            var winningBetTypes = new List<BetType>();
-            PropertyInfo[] properties = typeof(Bet).GetProperties();
-            BetType winningNumberBetType;
-
-            if (Enum.TryParse(string.Concat("BetOnNumber", winningNumber.ToString()), false, out winningNumberBetType))
-            {
-                winningBetTypes.Add(winningNumberBetType);
-            }
-            else
-            {
-                return winningBetTypes;
-                //log here could not set winning number
-            }
-
-
-            //Side bets
-            if (winningNumber % 2 != 0)
-                winningBetTypes.Add(BetType.BetOnColorBlack);
-
-            if (winningNumber % 2 == 0 && winningNumber != 0)
-                winningBetTypes.Add(BetType.BetOnColorRed);
-
-            if (winningNumber % 2 == 0 && winningNumber != 0)
-                winningBetTypes.Add(BetType.BetOnEven);
-
-            if (winningNumber % 2 != 0)
-                winningBetTypes.Add(BetType.BetOnOdd);
-
-            if (winningNumber >= 1 && winningNumber <= 18)
-                winningBetTypes.Add(BetType.BetOnLow);
-
-            if (winningNumber >= 19 && winningNumber <= 36)
-                winningBetTypes.Add(BetType.BetOnHigh);
-
-            if (winningNumber >= 1 && winningNumber <= 12)
-                winningBetTypes.Add(BetType.BetOnFirstDozen);
-
-            if (winningNumber >= 13 && winningNumber <= 24)
-                winningBetTypes.Add(BetType.BetOnSecondDozen);
-
-            if (winningNumber >= 25 && winningNumber <= 36)
-                winningBetTypes.Add(BetType.BetOnThirdDozen);
-
-            if (winningNumber % 3 == 1 && winningNumber != 0)
-                winningBetTypes.Add(BetType.BetOnFirstColumn);
-
-            if (winningNumber % 3 == 2 && winningNumber != 0)
-                winningBetTypes.Add(BetType.BetOnSecondColumn);
-
-            if (winningNumber % 3 == 0 && winningNumber != 0)
-                winningBetTypes.Add(BetType.BetOnThirdColumn);
-
-
-            return winningBetTypes;
-        }
-
-    
-        
-
+        [Route("AddSinglePayout")]
         [HttpPost]
         public async Task<JsonResult> AddPayout(Payout payout)
         {
@@ -190,6 +101,7 @@ namespace RouletteAPI.Controllers
         }
 
 
+        [Route("GetAllPayouts")]
         [HttpGet]
         public async Task<JsonResult> GetAllPayouts()
         {
@@ -236,6 +148,97 @@ namespace RouletteAPI.Controllers
             }
 
             return new JsonResult(table);
+        }
+
+        private List<Bet> GetBetsForSpin(int spinIdNumber)
+        {
+            var betsToCheckJson = _betController.GetBetsForSpin(spinIdNumber);
+            return MapDataTabletoBets((DataTable)betsToCheckJson.Result.Value);
+        }
+
+
+        private SpinResult GetSpinResult(int spinIdNumber)
+        {
+            var spinResultJson = _spinResultController.GetSpinResult(spinIdNumber);
+            var dt = (DataTable)spinResultJson.Result.Value;
+            var spinResult = dt.AsEnumerable().Select(row =>
+                                                new SpinResult
+                                                {
+                                                    SpinIdNumber = row.Field<int>("SpinIdNumber"),
+                                                    Result = row.Field<int>("Result"),
+                                                }).ToList();
+            return spinResult.FirstOrDefault();
+        }
+
+
+        private decimal GetOdds(BetType betType)
+        {
+            if (betType == BetType.BetOnColorRed || betType == BetType.BetOnColorBlack || betType == BetType.BetOnEven || betType == BetType.BetOnOdd || betType == BetType.BetOnHigh || betType == BetType.BetOnLow)
+                return 1;
+
+            if (betType == BetType.BetOnFirstColumn || betType == BetType.BetOnSecondColumn || betType == BetType.BetOnThirdColumn || betType == BetType.BetOnFirstDozen || betType == BetType.BetOnSecondDozen || betType == BetType.BetOnThirdDozen)
+                return 2;
+
+            //default
+            return 35;
+
+        }
+
+        private List<BetType> GetWinningBetTypes(int winningNumber)
+        {
+            var winningBetTypes = new List<BetType>();
+            PropertyInfo[] properties = typeof(Bet).GetProperties();
+            BetType winningNumberBetType;
+
+            if (Enum.TryParse(string.Concat("BetOnNumber", winningNumber.ToString()), false, out winningNumberBetType))
+            {
+                winningBetTypes.Add(winningNumberBetType);
+            }
+            else
+            {
+                return winningBetTypes;
+                //log here could not set winning number
+            }
+
+            //Side bets
+            if (winningNumber % 2 != 0)
+                winningBetTypes.Add(BetType.BetOnColorBlack);
+
+            if (winningNumber % 2 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnColorRed);
+
+            if (winningNumber % 2 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnEven);
+
+            if (winningNumber % 2 != 0)
+                winningBetTypes.Add(BetType.BetOnOdd);
+
+            if (winningNumber >= 1 && winningNumber <= 18)
+                winningBetTypes.Add(BetType.BetOnLow);
+
+            if (winningNumber >= 19 && winningNumber <= 36)
+                winningBetTypes.Add(BetType.BetOnHigh);
+
+            if (winningNumber >= 1 && winningNumber <= 12)
+                winningBetTypes.Add(BetType.BetOnFirstDozen);
+
+            if (winningNumber >= 13 && winningNumber <= 24)
+                winningBetTypes.Add(BetType.BetOnSecondDozen);
+
+            if (winningNumber >= 25 && winningNumber <= 36)
+                winningBetTypes.Add(BetType.BetOnThirdDozen);
+
+            if (winningNumber % 3 == 1 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnFirstColumn);
+
+            if (winningNumber % 3 == 2 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnSecondColumn);
+
+            if (winningNumber % 3 == 0 && winningNumber != 0)
+                winningBetTypes.Add(BetType.BetOnThirdColumn);
+
+
+            return winningBetTypes;
         }
 
 
@@ -312,63 +315,3 @@ namespace RouletteAPI.Controllers
 //CalculateWinningsPerBet()
 //CreditUserAccount()
 
-/*
- * 
-[Route("SanitizeText")]
-[HttpPost]
-public JsonResult SanitizeText([FromBody] string textToSanitize)
-{
-    try
-    {
-        DataTable dt = (DataTable)GetAllBets().Result.Value;
-
-
-        List<Bet> bets = dt.AsEnumerable().Select(row =>
-                                                                    new Bet
-                                                                    {
-                                                                        IdKey = row.Field<int>("idKey"),
-                                                                        Word = row.Field<string>("word"),
-                                                                        CaseSensitive = row.Field<bool>("caseSensitive"),
-                                                                        WholeWordOnly = row.Field<bool>("wholeWordOnly"),
-                                                                        TrimWord = row.Field<bool>("trimWord")
-
-                                                                    }).ToList();
-
-        string result = textToSanitize;
-        Regex regex = new Regex(@"^[a-zA-Z0-9_[\])({}-]+$");
-        foreach (Bet bet in bets.OrderByDescending(w => w.Word.Length))
-        {
-            string replacementString = bet.Word;
-            if (bet.TrimWord)
-            {
-                replacementString = bet.Word.Trim();
-            }
-            if (bet.WholeWordOnly)
-            {
-                replacementString = @"\b" + replacementString + @"\b";
-            }
-            //Handle Special Characters here (this case is only *)
-            if (replacementString.Contains("*"))
-            {
-                replacementString = replacementString.Replace("*", "\\*");
-            }
-            if (bet.CaseSensitive)
-            {
-                result = Regex.Replace(result, replacementString, new string('*', bet.Word.Length));
-            }
-            else
-            {
-                result = Regex.Replace(result, replacementString, new string('*', bet.Word.Length), RegexOptions.IgnoreCase);
-            }
-
-        }
-
-        return new JsonResult(result);
-    }
-    catch (Exception ex)
-    {
-        //TODO: log exception ex 
-        return new JsonResult("Could not sanitize string");
-
-    }
-}*/

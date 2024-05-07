@@ -20,10 +20,13 @@ namespace RouletteAPI.Controllers
             _configuration = configuration;
             _sqlDataSource = _configuration.GetConnectionString("RouletteApp");
         }
+
+
+        [Route("AddBet")]
         [HttpPost]
         public async Task<JsonResult> CreateBet(Bet bet)
         {
-            string query = "pr_CreateBet";
+            string query = "pr_AddBet";
             using (SqlConnection conn = new SqlConnection(_sqlDataSource))
             {
                 await conn.OpenAsync();
@@ -114,6 +117,7 @@ namespace RouletteAPI.Controllers
 
         }
 
+        [Route("GetAllBets")]
         [HttpGet]
         public async Task<JsonResult> GetAllBets()
         {
