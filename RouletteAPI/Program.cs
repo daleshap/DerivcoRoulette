@@ -32,15 +32,15 @@ builder.Services.AddScoped<IPayoutRepository, PayoutRepository>();
 builder.Services.AddScoped<IBetHelper, BetHelper>();
 builder.Services.AddScoped<ISpinResultHelper, SpinResultHelper>();
 builder.Services.AddScoped<IPayoutHelper, PayoutHelper>();
+builder.Services.AddSingleton<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseMiddleware<GlobalExceptionHandler>();
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseCors(MyAllowSpecificOrigins);
 
 app.UseHttpsRedirection();
@@ -50,3 +50,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+public partial class Program { }

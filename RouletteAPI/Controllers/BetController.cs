@@ -61,6 +61,5 @@ namespace RouletteAPI.Controllers
             return new JsonResult(betTable);
         }
 
-
     }
 }
