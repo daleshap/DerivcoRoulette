@@ -21,4 +21,8 @@
     <ProjectReference Include="..\RouletteAPI\RouletteAPI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TestDBScript\" />
+  </ItemGroup>
+
 </Project>

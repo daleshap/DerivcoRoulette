@@ -127,7 +127,7 @@ namespace RouletteAPI.Repos
             return table;
         }
 
-        public async Task<DataTable> GetBetsForUser(int userId)
+        public async Task<DataTable> GetBetsForUserAsync(int userId)
         {
             string query = "pr_GetBetsForUser";
             DataTable table = new DataTable();

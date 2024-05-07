@@ -49,7 +49,7 @@ namespace RouletteAPI.Controllers
         [HttpGet]
         public async Task<JsonResult> GetBetForUser(int userId)
         {
-            DataTable betTable = await _betRepository.GetBetsForUser(userId);
+            DataTable betTable = await _betRepository.GetBetsForUserAsync(userId);
             return new JsonResult(betTable);
         }
 

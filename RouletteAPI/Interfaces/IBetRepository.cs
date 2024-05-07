@@ -9,7 +9,7 @@ namespace RouletteAPI.Interfaces
         Task<DataTable> GetBetsForSpinAsync(int spinId);
         Task<string> AddBetAsync(Bet bet);
         Task<DataTable> GetAllBetsAsync();
-        Task<DataTable> GetBetsForUser(int userId);
+        Task<DataTable> GetBetsForUserAsync(int userId);
         Task<DataTable> GetSingleBetAsync(int betId);
 
     }
