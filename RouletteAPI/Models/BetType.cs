@@ -50,6 +50,6 @@
         BetOnNumber33,
         BetOnNumber34,
         BetOnNumber35,
-        BetOnNumber36 = 35
+        BetOnNumber36
     }
 }

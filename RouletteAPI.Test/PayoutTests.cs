@@ -1,17 +1,12 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using Moq;
 using NUnit.Framework;
-using RouletteAPI.Interfaces;
-using RouletteAPI.Models;
 using RouletteAPI.Repos;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
 using System.Threading.Tasks;
 
-namespace RouletteAPI.Tests.Repos
+namespace RouletteAPI.Test
 {
     [TestFixture]
     public class PayoutRepositoryTests

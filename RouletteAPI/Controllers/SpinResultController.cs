@@ -49,5 +49,13 @@ namespace RouletteAPI.Controllers
             return new JsonResult(table);
         }
 
+        [Route("GetLatestSpinResult")]
+        [HttpGet]
+        public async Task<JsonResult> GetLatestSpinResult()
+        {
+            var table = await _spinResultRepository.GetLatestSpinResultAsync();
+            return new JsonResult(table);
+        }
+
     }
 }

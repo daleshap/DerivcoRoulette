@@ -9,6 +9,7 @@ namespace RouletteAPI.Interfaces
         Task<int> AddSpinResultAsync(int result);
         Task<DataTable> GetAllSpinResultsAsync();
         Task<DataTable> GetSpinResultAsync(int spinResultId);
+        Task<DataTable> GetLatestSpinResultAsync();
     }
 
 }

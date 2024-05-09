@@ -82,5 +82,26 @@ namespace RouletteAPI.Repos
             return table;
         }
 
+        public async Task<DataTable> GetLatestSpinResultAsync()
+        {
+            string query = "SELECT TOP 1 SpinIdNumber, Result from SpinResults order by 1 desc";
+            DataTable table = new DataTable();
+            using (SqlConnection conn = new SqlConnection(_sqlDataSource))
+            {
+                await conn.OpenAsync();
+                using (SqlCommand command = new SqlCommand(query))
+                {
+                    command.Connection = conn;
+                    command.CommandType = CommandType.Text;
+                    using (SqlDataReader dataReader = await command.ExecuteReaderAsync())
+                    {
+                        table.Load(dataReader);
+                    }
+                    conn.Close();
+                }
+            }
+            return table;
+        }
+
     }
 }
